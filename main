@@ -1,0 +1,33 @@
+from pprint import pprint
+import pandas as pd
+import re
+import csv
+
+with open("phonebook_raw.csv", encoding="utf-8") as f:
+    rows = csv.reader(f, delimiter=",")
+    contacts_list = list(rows)
+
+phonebook = []
+phonebook.append(contacts_list[0])
+
+for i in contacts_list[1:]:
+    fullname = re.findall('\w+', str(i[:3]))
+    lastname = fullname[0]
+    firstname = fullname[1]
+    if len(fullname) > 2:
+        surname = fullname[2]
+    else:
+        surname = ''
+    tel = re.sub('[^0-9]', '', i[5])
+    tel = re.sub(r'(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})(\d{4})', r'+7(\2)-\3-\4-\5 доб.\6', tel)
+    tel = re.sub(r'(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})', r'+7(\2)-\3-\4-\5', tel)
+    new_line = []
+    new_line.extend([lastname, firstname, surname, i[3], i[4], tel, i[6]])
+    phonebook.append(new_line)
+
+phonebook = pd.DataFrame(phonebook)
+phonebook = phonebook.rename(columns=phonebook.iloc[0])
+phonebook = phonebook[1:]
+phonebook = phonebook.groupby(['lastname', 'firstname']).agg({'surname':'max', 'organization':'max', 'position':'max', 'phone':'max', 'email':'max'}).reset_index()
+pprint(phonebook)
+phonebook.to_csv('phonebook.csv',index = False)
